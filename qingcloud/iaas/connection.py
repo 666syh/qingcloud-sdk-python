@@ -37,10 +37,10 @@ class APIConnection(HttpConnection):
     """
     req_checker = RequestChecker()
 
-    def __init__(self, qy_access_key_id, qy_secret_access_key, zone,
+    def __init__(self, qy_access_key_id=None, qy_secret_access_key=None, zone=None,
                  host="api.qingcloud.com", port=443, protocol="https",
                  pool=None, expires=None,
-                 retry_time=2, http_socket_timeout=60, debug=False):
+                 retry_time=2, http_socket_timeout=60, debug=False, token=None):
         """
         @param qy_access_key_id - the access key id
         @param qy_secret_access_key - the secret access key
@@ -58,10 +58,11 @@ class APIConnection(HttpConnection):
 
         super(APIConnection, self).__init__(
             qy_access_key_id, qy_secret_access_key, host, port, protocol,
-            pool, expires, http_socket_timeout, debug)
+            pool, expires, http_socket_timeout, debug, token)
 
-        self._auth_handler = QuerySignatureAuthHandler(self.host,
-                                                       self.qy_access_key_id, self.qy_secret_access_key)
+        if not token:
+            self._auth_handler = QuerySignatureAuthHandler(self.host,
+                                                           self.qy_access_key_id, self.qy_secret_access_key)
 
         # other apis
         # TODO: seperate functions in this class into each function class

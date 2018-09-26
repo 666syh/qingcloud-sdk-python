@@ -20,6 +20,13 @@ try:
     import httplib
 except:
     import http.client as httplib
+try:
+    import urllib.parse as urllib
+    is_python3 = True
+except:
+    import urllib
+    is_python3 = False
+from qingcloud.misc.utils import get_utf8_value, get_ts
 
 
 class ConnectionQueue(object):
@@ -150,6 +157,42 @@ class HTTPRequest(object):
         # add authorize information to request
         if connection._auth_handler:
             connection._auth_handler.add_auth(self, **kwargs)
+        else:
+            self.build_request(connection.token)
+
+    def build_request(self, token):
+        self.params['id_token'] = token
+        self.params['signature_version'] = 2
+        self.params['version'] = 1
+        time_stamp = get_ts()
+        self.params['time_stamp'] = time_stamp
+
+        if self.method == 'POST':
+            # req and retried req should not have signature
+            params = self.params.copy()
+            self.body = urllib.urlencode(params)
+            self.header = {
+                'Content-Length': str(len(self.body)),
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'text/plain',
+                'Connection': 'Keep-Alive'
+            }
+        else:
+            keys = sorted(self.params.keys())
+            pairs = []
+            for key in keys:
+                val = get_utf8_value(self.params[key])
+                if is_python3:
+                    key = key.encode()
+                pairs.append(urllib.quote(key, safe='') + '=' +
+                             urllib.quote(val, safe='-_~'))
+            qs = '&'.join(pairs)
+
+            self.body = ''
+            # if this is a retried req, the qs from the previous try will
+            # already be there, we need to get rid of that and rebuild it
+            self.path = self.path.split('?')[0]
+            self.path = (self.path + '?' + qs)
 
 
 class HTTPResponse(httplib.HTTPResponse):
@@ -180,7 +223,7 @@ class HttpConnection(object):
 
     def __init__(self, qy_access_key_id, qy_secret_access_key, host=None,
                  port=443, protocol="https", pool=None, expires=None,
-                 http_socket_timeout=10, debug=False):
+                 http_socket_timeout=10, debug=False, token=None):
         """
         @param qy_access_key_id - the access key id
         @param qy_secret_access_key - the secret access key
@@ -199,6 +242,7 @@ class HttpConnection(object):
         self.protocol = protocol
         self.secure = protocol.lower() == "https"
         self.debug = debug
+        self.token = token
         self._auth_handler = None
         self._proxy_host = None
         self._proxy_port = None
