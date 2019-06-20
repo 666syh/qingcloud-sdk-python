@@ -27,6 +27,7 @@ except:
     import urllib
     is_python3 = False
 from qingcloud.misc.utils import get_utf8_value, get_ts
+from qingcloud.misc.json_tool import json_load
 
 
 class ConnectionQueue(object):
@@ -158,7 +159,7 @@ class HTTPRequest(object):
         if connection._auth_handler:
             connection._auth_handler.add_auth(self, **kwargs)
         else:
-            self.build_request(connection.token)
+            self.build_request(connection._token)
 
     def build_request(self, token):
         self.params['id_token'] = token
@@ -223,7 +224,8 @@ class HttpConnection(object):
 
     def __init__(self, qy_access_key_id, qy_secret_access_key, host=None,
                  port=443, protocol="https", pool=None, expires=None,
-                 http_socket_timeout=10, debug=False, token=None):
+                 http_socket_timeout=10, debug=False,
+                 credential_proxy_host=None, credential_proxy_port=80):
         """
         @param qy_access_key_id - the access key id
         @param qy_secret_access_key - the secret access key
@@ -242,7 +244,10 @@ class HttpConnection(object):
         self.protocol = protocol
         self.secure = protocol.lower() == "https"
         self.debug = debug
-        self.token = token
+        self.credential_proxy_host = credential_proxy_host
+        self.credential_proxy_port = credential_proxy_port
+        self._token = ''
+        self._token_exp = None
         self._auth_handler = None
         self._proxy_host = None
         self._proxy_port = None
@@ -307,9 +312,13 @@ class HttpConnection(object):
         if not host:
             host = self.host
 
+        if not self._auth_handler:
+            self._check_token()
+
         # Build the http request
         request = self.build_http_request(method, path, params, auth_path,
                                           headers, host, data)
+
         request.authorize(self)
 
         conn_host = host
@@ -343,3 +352,25 @@ class HttpConnection(object):
             self._set_conn(conn)
 
         return response
+
+    def _check_token(self):
+        if not self._token or not self._token_exp or time.time() >= self._token_exp:
+            try:
+                conn = httplib.HTTPConnection(self.credential_proxy_host, self.credential_proxy_port, timeout=1)
+                conn.request("GET", "/latest/meta-data/security-credentials", headers={"Accept":"application/json"})
+                response = conn.getresponse()
+                # Reuse the connection
+                if response.status == 200:
+                    r = response.read()
+                    if r:
+                        # first reverse escape, then json_load
+                        r = json_load(eval(r))
+                        self._token = r.get('id_token')
+                        self._token_exp = r.get('expiration')
+                elif response.status == 404:
+                    # print('current instance has no credentials')
+                    pass
+            except:
+                # print('Request not authenticated, Access Key ID is either missing or invalid.')
+                pass
+

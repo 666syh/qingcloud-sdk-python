@@ -40,7 +40,8 @@ class APIConnection(HttpConnection):
     def __init__(self, qy_access_key_id=None, qy_secret_access_key=None, zone=None,
                  host="api.qingcloud.com", port=443, protocol="https",
                  pool=None, expires=None,
-                 retry_time=2, http_socket_timeout=60, debug=False, token=None):
+                 retry_time=2, http_socket_timeout=60, debug=False,
+                 credential_proxy_host="254.254.254.254", credential_proxy_port=80):
         """
         @param qy_access_key_id - the access key id
         @param qy_secret_access_key - the secret access key
@@ -50,6 +51,8 @@ class APIConnection(HttpConnection):
         @param protocol - the protocol to access to web server, "http" or "https"
         @param pool - the connection pool
         @param retry_time - the retry_time when message send fail
+        @param token -
+        @param credential_proxy -
         """
         # Set default zone
         self.zone = zone
@@ -58,9 +61,10 @@ class APIConnection(HttpConnection):
 
         super(APIConnection, self).__init__(
             qy_access_key_id, qy_secret_access_key, host, port, protocol,
-            pool, expires, http_socket_timeout, debug, token)
+            pool, expires, http_socket_timeout, debug, credential_proxy_host, credential_proxy_port)
 
-        if not token:
+        # TODO: check credential version
+        if self.qy_access_key_id:
             self._auth_handler = QuerySignatureAuthHandler(self.host,
                                                            self.qy_access_key_id, self.qy_secret_access_key)
 
