@@ -106,6 +106,11 @@ class APIConnection(HttpConnection):
                         time.sleep(next_sleep)
                         retry_time += 1
                         continue
+                    if resp_str and json_load(resp_str).get("ret_code") == 2001 and retry_time < self.retry_time - 1:
+                        self.refresh_token()
+                        time.sleep(next_sleep)
+                        retry_time += 1
+                        continue
                     return json_load(resp_str) if resp_str else ""
             except:
                 if retry_time < self.retry_time - 1:

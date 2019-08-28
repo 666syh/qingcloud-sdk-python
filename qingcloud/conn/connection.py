@@ -365,27 +365,30 @@ class HttpConnection(object):
     def _check_token(self):
         if not self._token or not self._token_exp or time.time() >= self._token_exp:
             try:
-                conn = httplib.HTTPConnection(self.credential_proxy_host, self.credential_proxy_port, timeout=1)
-                conn.request("GET", "/latest/meta-data/security-credentials", headers={"Accept":"application/json"})
-                response = conn.getresponse()
-                # Reuse the connection
-                if response.status == 200:
-                    r = response.read()
-                    if r:
-                        # first reverse escape, then json_load
-                        r = json_load(eval(r))
-                        self._token = r.get('id_token')
-                        self._token_exp = r.get('expiration')
-                        self.iam_access_key = r.get('access_key')
-                        self.iam_secret_key = r.get('secret_key')
-
-                        self._auth_handler = QuerySignatureAuthHandler(self.host,
-                                                str(self.iam_access_key), str(self.iam_secret_key))
-
-                elif response.status == 404:
-                    # print('current instance has no credentials')
-                    pass
+                self.refresh_token()
             except:
-                # print('Request not authenticated, Access Key ID is either missing or invalid.')
-                pass
+                print('Request not authenticated, Access Key ID is either missing or invalid.')
+                # pass
+
+    def refresh_token(self):
+        conn = httplib.HTTPConnection(self.credential_proxy_host, self.credential_proxy_port, timeout=1)
+        conn.request("GET", "/latest/meta-data/security-credentials", headers={"Accept": "application/json"})
+        response = conn.getresponse()
+        # Reuse the connection
+        if response.status == 200:
+            r = response.read()
+            if r:
+                # first reverse escape, then json_load
+                r = json_load(eval(r))
+                self._token = r.get('id_token')
+                self._token_exp = r.get('expiration')
+                self.iam_access_key = r.get('access_key')
+                self.iam_secret_key = r.get('secret_key')
+
+                self._auth_handler = QuerySignatureAuthHandler(self.host,
+                                                               str(self.iam_access_key), str(self.iam_secret_key))
+
+        elif response.status == 404:
+            print('current instance has no credentials')
+            # pass
 
