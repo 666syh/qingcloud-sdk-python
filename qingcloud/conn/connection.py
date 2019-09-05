@@ -367,8 +367,8 @@ class HttpConnection(object):
             try:
                 self.refresh_token()
             except:
-                print('Request not authenticated, Access Key ID is either missing or invalid.')
-                # pass
+                # print('Request not authenticated, Access Key ID is either missing or invalid.')
+                pass
 
     def refresh_token(self):
         conn = httplib.HTTPConnection(self.credential_proxy_host, self.credential_proxy_port, timeout=1)
@@ -389,6 +389,6 @@ class HttpConnection(object):
                                                                str(self.iam_access_key), str(self.iam_secret_key))
 
         elif response.status == 404:
-            print('current instance has no credentials')
-            # pass
+            # print('current instance has no credentials')
+            pass
 
