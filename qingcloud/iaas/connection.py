@@ -41,7 +41,7 @@ class APIConnection(HttpConnection):
                  host="api.qingcloud.com", port=443, protocol="https",
                  pool=None, expires=None,
                  retry_time=2, http_socket_timeout=60, debug=False,
-                 credential_proxy_host="254.254.254.254", credential_proxy_port=80):
+                 credential_proxy_host="169.254.169.254", credential_proxy_port=80):
         """
         @param qy_access_key_id - the access key id
         @param qy_secret_access_key - the secret access key
