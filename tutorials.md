@@ -26,13 +26,14 @@ curl -H "Accept: application/json" http://169.254.169.254:80/latest/meta-data/se
     cd /opt
     wget https://github.com/666syh/qingcloud-sdk-python/archive/1.2.tar.gz
     tar -xf 1.2.tar.gz
+    mv qingcloud-sdk-python-1.2 qingcloud-sdk-python
     ```
 
     3.3 编写脚本
 
     3.3.1 新建脚本文件，起名run
 
-    3.3.2 将 `qingcloud-sdk-python`文件夹 设置进入环境变量
+    3.3.2 将 `qingcloud-sdk-python`文件夹 设置进入环境变量(此处在代码中设置，建议不要在同时使用export)
     ```python
     import sys
     sys.path.insert(0, '/opt/qingcloud-sdk-python')
